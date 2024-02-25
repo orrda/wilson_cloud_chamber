@@ -21,7 +21,7 @@ def get_lengths(video_path):
 
     # check if the video has already been processed
     particles_path = video_path[:-4] + "_particles" + ".JSON"
-    #collection.load_particles(particles_path)
+    collection.load_particles(particles_path)
 
     if collection.arr == []:
         # Detect particles in the video
