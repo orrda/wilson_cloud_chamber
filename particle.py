@@ -11,6 +11,7 @@ class particle:
 
 
     def display_num(self, num):
+        # display the frame of the particle in the given number since the start of the framerange
         cap = cv2.VideoCapture()
         cap.open(path)
         cap.set(cv2.CAP_PROP_POS_FRAMES, self.framerange[0] + num)
@@ -23,14 +24,33 @@ class particle:
 
 
     def length(self):
-        pass
+        frame_sum = self.sum()
+        # sharpen the image
+        # frame_sum = cv2.filter2D(frame_sum, -1, np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]]))
+
+        contours , _ = cv2.findContours(frame_sum, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(contours) == 0:
+            return 0
+        print(len(contours))
+        length_list = [cv2.arcLength(c, True) for c in contours]
+
+        length = max(length_list)/2
+
+        return length
 
     def sum(self):
         cap = cv2.VideoCapture(path)
-        cap.open(self.framerange[0])
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.framerange[0])
+        final_frame = None
 
         while True:
             ret, frame = cap.read()
+            if frame is None:
+                break
+            
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = frame[self.box[1]:self.box[3], self.box[0]:self.box[2]]
+
             if ret and self.framerange[0] <= cap.get(cv2.CAP_PROP_POS_FRAMES) <= self.framerange[1]:
                 fr = cv2.rectangle(frame, (self.box[0], self.box[1]), (self.box[2], self.box[3]), (0, 255, 0), 2)
 
@@ -43,4 +63,12 @@ class particle:
         return final_frame
         
     def save_to_file(self):
+        pass
+
+    def particle_type(self):
+        # importent function, that requires a non-trivial implementation
+        pass
+
+    def particle_width(self):
+        # maybe by dividing the area by the length?
         pass

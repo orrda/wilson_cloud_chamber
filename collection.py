@@ -4,6 +4,8 @@ import time
 from particle import particle
 import os
 import shutil
+import json
+import matplotlib.pyplot as plt
 
 class collection:
     """
@@ -102,10 +104,12 @@ class collection:
         # Create a new particle object
         new_particle = particle([frame_count, frame_count], box)
         self.arr.append(new_particle)
-        print("New particle added")
         return
     
-    def save_particles(self):
+    def save_particles_images(self):
+
+
+
         folder = os.path.join(os.path.dirname(self.video_path), "particles")
         for filename in os.listdir(folder):
             file_path = os.path.join(folder, filename)
@@ -142,7 +146,18 @@ class collection:
             cv2.imwrite(particle_image_path, particle_image)
 
         return
-    
+
+    def save_particles(self, file_path):
+        # Convert the collection object to a dictionary
+        collection_dict = {
+            "video_path": self.video_path,
+            "arr": [particle.__dict__ for particle in self.arr]
+        }
+
+        # Save the collection as a JSON file
+        with open(file_path, "w") as json_file:
+            json.dump(collection_dict, json_file)
+
     def clean_by_area(self, min_area, max_area):
         # Loop through the particles and remove the ones that are too small or too large
         new_particles = []
@@ -201,15 +216,47 @@ class collection:
         self.arr = new_particles
         return
     
-    def load_particles(self):
-        folder = os.path.join(os.path.dirname(self.video_path), "particles")
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
-            if file_path.endswith(".jpg"):
-                frame_number = int(filename.split("_")[1].split(".")[0])
-                particle_image = cv2.imread(file_path)
-                x1, y1, x2, y2 = particle.box
-                box = (x1, y1, x2, y2)
-                new_particle = particle([frame_number, frame_number], box)
-                self.arr.append(new_particle)
+    def load_particles(self, file_path):
+
+        # check if the video has already been processed
+        if not os.path.exists(file_path):
+            print("No saved particles found")
+            return
+
+        # Load the collection from the JSON file
+        with open(file_path, "r") as json_file:
+            collection_dict = json.load(json_file)
+            self.video_path = collection_dict["video_path"]
+            self.arr = [particle(**particle_dict) for particle_dict in collection_dict["arr"]]
+            print("Loaded ", len(self.arr), " particles from the file: ", file_path)
         return
+        
+    
+    def __add__(self, other):
+        # don't use yet, has problems regarding the video path
+        new_collection = collection(self.video_path)
+        new_collection.arr = self.arr + other.arr
+        return new_collection
+
+    def length_histogram(self):
+        """
+        Generate a histogram of particle lengths in the collection.
+
+        This function calculates the length of each particle in the collection
+        and plots a histogram to visualize the distribution of particle lengths.
+
+        Returns:
+            None
+        """
+        length_list = [particle.length() for particle in self.arr]
+
+        plt.hist(length_list, bins=10)
+        plt.xlabel('Particle Length')
+        plt.ylabel('Frequency')
+        plt.title('Length Histogram')
+        plt.show()
+        return
+
+            
+
+    
