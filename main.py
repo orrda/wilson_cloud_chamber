@@ -43,7 +43,9 @@ def get_lengths(video_path):
         collection.save_particles(particles_path)
 
     durationes = [(p.framerange[1] - p.framerange[0]) for p in collection.arr]
-    return durationes
+    lengthes = [p.length() for p in collection.arr]
+    lengthes = [l for l in lengthes if l > 0]
+    return lengthes, durationes
 
 
 dirctory = "C:\\Users\\orrda\\OneDrive\\Desktop\\שנה ג\\סמסטר א\\מעבדה\\code\\particales\\week1.1\\סרטונים שבוע 1"
@@ -52,17 +54,21 @@ dirctory = "C:\\Users\\orrda\\OneDrive\\Desktop\\שנה ג\\סמסטר א\\מע�
 video_paths = glob.glob(dirctory + "\\*.MOV")
 
 all_lengths = []
+all_durationes = []
 for path in video_paths:
-    all_lengths = all_lengths + get_lengths(path)
-    plt.hist(all_lengths, bins=10)
-    plt.xlabel('Particle Length')
-    plt.ylabel('Frequency')
-    plt.title('Length Histogram')
-    plt.show()
+    lengths, durations = get_lengths(path)
+    all_lengths = all_lengths + lengths
+    all_durationes = all_durationes + durations
 
 
 plt.hist(all_lengths, bins=10)
 plt.xlabel('Particle Length')
 plt.ylabel('Frequency')
 plt.title('Length Histogram')
+plt.show()
+
+plt.hist(all_durationes, bins=10)
+plt.xlabel('Particle Duration')
+plt.ylabel('Frequency')
+plt.title('Duration Histogram')
 plt.show()
