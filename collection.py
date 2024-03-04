@@ -30,6 +30,8 @@ class collection:
     def __init__(self, video_path):
         self.video_path = video_path
         self.arr = []
+        self.start_frame = 0
+        self.saving_folder = r'C:\Users\orrda\Downloads\new_particals'
 
     def detect_particles(self, area_threshold, time_threshold):
         # Start the timer
@@ -37,6 +39,7 @@ class collection:
 
         # Load the video
         cap = cv2.VideoCapture(self.video_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)
         ret, frame = cap.read()
 
         # Define the parameters for shape detection
@@ -48,6 +51,8 @@ class collection:
             ret, frame = cap.read()
 
             frame_count = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            if frame_count % 50 == 0:
+                print("frame: ", frame_count)
 
             # Break the loop if the video has ended
             if not ret:
@@ -68,6 +73,20 @@ class collection:
                     box_area = (x + w - x) * (y + h - y)
                     if 10000> box_area > 1000:
                         self.add_particle(box, frame_count, area_threshold, time_threshold)
+
+            # Display the frame with the detected objects
+            """
+            relevant_particles = [p for p in self.arr if frame_count - p.framerange[1] < 10]
+            relevant_boxes = [p.box for p in relevant_particles]
+            for box in relevant_boxes:
+                x1, y1, x2, y2 = box
+                frame = cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+            cv2.imshow('frame', small_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            """
+
 
         # Release the video file and return the detected objects
         cap.release()
@@ -102,36 +121,22 @@ class collection:
                     return
 
         # Create a new particle object
-        new_particle = particle([frame_count, frame_count], box)
+        new_particle = particle([frame_count, frame_count], box, self.video_path)
         self.arr.append(new_particle)
         return
     
-    def save_particles_images(self):
-
-
-
-        folder = os.path.join(os.path.dirname(self.video_path), "particles")
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
-
-
-        # Check if the folder exists, and delete it if it does
-
-        folder_path = os.path.join(os.path.dirname(self.video_path), "particles")
-
-        os.makedirs(folder_path, exist_ok=True)
+    def save_particles_images(self, folder_path = None):
+        if folder_path is None:
+            folder_path = self.saving_folder
+        else:
+            self.saving_folder = folder_path
 
         print("Saving ", len(self.arr) ," particles to the folder:", folder_path)
 
         # Load the video
         cap = cv2.VideoCapture(self.video_path)
+
+        vid_num = self.video_path.split("\\")[-1].split(".")[0]
 
         # Save the particles to the folder
         for particle in self.arr:
@@ -142,8 +147,10 @@ class collection:
             particle_image = frame[y1:y2, x1:x2]
 
             # Save the particle image in the folder
-            particle_image_path = os.path.join(folder_path, f"particle_{particle.framerange[0]}.jpg")
-            cv2.imwrite(particle_image_path, particle_image)
+            particle_image_path = os.path.join(folder_path, f"video_{vid_num}_particle_{particle.framerange[0]}.png")
+            good = cv2.imwrite(particle_image_path, particle_image)
+            if not good:
+                print("Failed to save ", particle_image_path)
 
         return
 
@@ -231,32 +238,3 @@ class collection:
             print("Loaded ", len(self.arr), " particles from the file: ", file_path)
         return
         
-    
-    def __add__(self, other):
-        # don't use yet, has problems regarding the video path
-        new_collection = collection(self.video_path)
-        new_collection.arr = self.arr + other.arr
-        return new_collection
-
-    def length_histogram(self):
-        """
-        Generate a histogram of particle lengths in the collection.
-
-        This function calculates the length of each particle in the collection
-        and plots a histogram to visualize the distribution of particle lengths.
-
-        Returns:
-            None
-        """
-        length_list = [particle.length() for particle in self.arr]
-
-        plt.hist(length_list, bins=10)
-        plt.xlabel('Particle Length')
-        plt.ylabel('Frequency')
-        plt.title('Length Histogram')
-        plt.show()
-        return
-
-            
-
-    

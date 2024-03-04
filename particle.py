@@ -1,26 +1,14 @@
 import cv2
 import numpy as np
 
-path = "C:\\Users\\orrda\\Downloads\\wilson_chamb1.mp4"
 
 class particle:
-    def __init__(self, framerange, box):
+    def __init__(self, framerange, box, path):
         self.framerange = framerange
         self.box = box
+        self.path = path
         pass
 
-
-    def display_num(self, num):
-        # display the frame of the particle in the given number since the start of the framerange
-        cap = cv2.VideoCapture()
-        cap.open(path)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, self.framerange[0] + num)
-
-        ret, frame = cap.read()
-        cv2.rectangle(frame, (self.box[0], self.box[1]), (self.box[2], self.box[3]), (0, 255, 0), 2)
-
-        cv2.imshow('frame', frame)
-        cv2.waitKey(0)
 
 
     def length(self):
@@ -39,7 +27,7 @@ class particle:
         return length
 
     def sum(self):
-        cap = cv2.VideoCapture(path)
+        cap = cv2.VideoCapture(self.path)
         cap.set(cv2.CAP_PROP_POS_FRAMES, self.framerange[0])
         final_frame = None
 
