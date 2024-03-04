@@ -1,6 +1,8 @@
 from collection import collection as coll
 import glob
 import matplotlib.pyplot as plt
+import cv2
+import numpy as np
 
 """
 This script processes a video of a Wilson cloud chamber to detect and clean particles.
@@ -16,49 +18,61 @@ def get_lengths(video_path):
     collection = coll(video_path)
 
     # check if the video has already been processed
-    particles_path = video_path[:-4] + "_particles" + ".JSON"
+    particles_path = video_path[:-4] + "_particles" + "JSON"
     #collection.load_particles(particles_path)
 
+    print("Number of particles:", len(collection.arr))
+
     if collection.arr == []:
-        """ 
-        Detect particles in the video, 
-        the first argument is the minumum ratio between the area intersection of the boxes and their union area,
-        so that it will be considered as the same particle.
-        the second argument is the maximum number of frames between the two boxes to be considered as the same particle.
-        """
-        collection.detect_particles(0.1, 20)
+        # Detect particles in the video
+        collection.detect_particles(
+                min_area_threshold = 20,
+                max_area_threshhold = 2000000,
+                time_threshold=10,
+                first_frame=0, 
+                last_frame=100000,
+                frame_box=(200, 1900, 0, 1080)
+            )
 
-        # Clean the particles by area, first argument is the minimum area and the second is the maximum area
-        collection.clean_by_area(1000, 20000)
+        # Save the particles to a folder
 
-        # Clean the particles by location, if we know that fo example the particles are only in the middle of the frame
-        collection.clean_location(0, 10800, 10, 1000)
-
-        # Clean the particles by brightness
-        collection.clean_by_brightness(2, 255)
-
-        # Clean the particles by duration
-        collection.clean_by_duration(10, 1000)
-
-        # Save the particles to a folder as a json file so next time we can load them from the file, 
-        # and we dont need to detact them again
         collection.save_particles(particles_path)
+        
+        print("Number of particles:", len(collection.arr))
 
-        # Save the images of the particles to a folder, can be specified as an argument or in 'collection' class
-        # saves each particle in a image with the name of the video and the frame that the particle was first detected
-        collection.save_particles_images()
+        #collection.save_particles_images()
 
 
-    durationes = [(p.framerange[1] - p.framerange[0]) for p in collection.arr]
-    lengthes = [p.length() for p in collection.arr]
-    lengthes = [l for l in lengthes if l > 0]
+
+
+
+    colle = [p for p in collection.arr if 50 < cv2.arcLength(np.array(p.contour), True) < 40000]
+    colle = [p for p in colle if p.framerange[1] - p.framerange[0] > 30]
+
+    print("Number of particles:", len(colle))
+
+
+    frame = np.zeros((1980, 1080), dtype=np.uint8)
+
+    for p in colle:
+        frame = cv2.drawContours(frame, [np.array(p.contour)], -1, (255, 255, 255), 1)
+
+    frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+    cv2.imshow("frame", frame)
+    cv2.waitKey(10000)
+        
+
+    colle = [p for p in colle if 300 < cv2.contourArea(np.array(p.contour)) < 4000]
+
+    durationes = [(p.framerange[1] - p.framerange[0]) for p in colle]
+
+    lengthes = [p.get_length() for p in colle]
+
     return lengthes, durationes
 
 
-
-
-# put the path to the directory containing the videos here
 dirctory = "C:\\Users\\orrda\\OneDrive\\Desktop\\שנה ג\\סמסטר א\\מעבדה\\code\\particales\\week1.1\\סרטונים שבוע 1"
+
 
 video_paths = glob.glob(dirctory + "\\*.MOV")
 
@@ -70,8 +84,6 @@ for path in video_paths:
     all_durationes = all_durationes + durations
 
 
-
-# in the end it will show two histograms, one for the length of the particles and one for the duration of the particles
 plt.hist(all_lengths, bins=10)
 plt.xlabel('Particle Length')
 plt.ylabel('Frequency')
