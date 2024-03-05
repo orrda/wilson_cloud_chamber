@@ -103,7 +103,7 @@ class collection:
             small_fg_mask = cv2.resize(fg_mask, (0, 0), fx=0.5, fy=0.5)
             cv2.imshow("Frame", small_frame)
             cv2.imshow("Foreground Mask", small_fg_mask)
-            cv2.waitKey(1)
+            cv2.waitKey(10)
 
 
         # Release the video file and return the detected objects

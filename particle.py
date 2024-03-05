@@ -136,24 +136,11 @@ class particle:
         # merge contours into one
         # create a closed shape from the two contours
 
-        #box1 = cv2.boundingRect(contour1)
-        #box2 = cv2.boundingRect(contour2)
-        #full_box = (min(box1[0], box2[0]), min(box1[1], box2[1]), max(box1[0]+box1[2], box2[0]+box2[2]), max(box1[1]+box1[3], box2[1]+box2[3]))
         filled = np.zeros((1980, 1080), dtype=np.uint8)
 
         filled = cv2.drawContours(filled, [contour1, contour2], -1, color = (255,255,255), thickness= -1)
         
-        #filled = filled[full_box[1]:full_box[3], full_box[0]:full_box[2]]
-        """
-        filled_copy = filled.copy()
-        filled_copy = cv2.rectangle(filled_copy, (full_box[0], full_box[1]), (full_box[2], full_box[3]), (255, 255, 255), 10)
-        filled_copy = cv2.resize(filled_copy, (0, 0), fx=0.3, fy=0.3)
-        cv2.imshow("filled", filled_copy)
-        cv2.waitKey(10)
-        """
-
         contours, _ = cv2.findContours(filled, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
 
         if len(contours) > 1:
             areas = [cv2.contourArea(c) for c in contours]
@@ -165,70 +152,6 @@ class particle:
 
         return new_contour
     
-    
-    
-    def merge_contours2(self, contour1, contour2):
-        # merge two contours into one
-        
-        new_contour1 = [cont for cont in contour1 if 
-                            cv2.pointPolygonTest(contour2, (int(cont[0][0]), int(cont[0][1])), False) < 1
-                        ]
-        new_contour2 = [cont for cont in contour2 if 
-                            cv2.pointPolygonTest(contour1, (int(cont[0][0]), int(cont[0][1])), False) < 1
-                        ]
-
-        # find the 2 closest points in the two contours
-        min1 = 0
-        min2 = 0
-        min_i_1 = 0
-        min_j_1 = 0
-        min_i_2 = 0
-        min_j_2 = 0
-
-        for i in range(len(new_contour1)):
-            for j in range(len(new_contour2)):
-                distance = np.linalg.norm(new_contour1[i] - new_contour2[j])
-                if distance < min2:
-                    if distance < min1:
-                        min2 = min1
-                        min1 = distance
-                        min_i_2 = min_i_1
-                        min_j_2 = min_j_1
-                        min_i_1 = i
-                        min_j_1 = j
-                    else:
-                        min2 = distance
-                        min_i_2 = i
-                        min_j_2 = j
-
-        flip = False
-        if min_i_1 > min_i_2:
-            min_i_1, min_i_2 = min_i_2, min_i_1
-            flip = not flip
-
-        if cv2.arcLength(np.array(new_contour1[min_i_1:min_i_2]), True) > cv2.arcLength(np.array(new_contour1), True)/2:
-            segment1 = new_contour1[min_i_1:min_i_2]
-        else:
-            segment1 = new_contour1[min_i_2:] + new_contour1[:min_i_2]
-
-
-        if min_j_1 > min_j_2:
-            min_j_1, min_j_2 = min_j_2, min_j_1
-            flip = not flip
-
-        if cv2.arcLength(np.array(new_contour2[min_j_1:min_j_2]), True) > cv2.arcLength(np.array(new_contour2), True)/2:
-            segment2 = new_contour2[min_j_1:min_j_2]
-        else:
-            segment2 = new_contour2[min_j_2:] + new_contour2[:min_j_2]
-
-        if flip:
-            segment2 = segment2.reverse()
-
-        new_contour = segment1 + segment2
-
-        new_contour = np.array(new_contour)
-
-        return new_contour
     
     def get_length(self):
         radius = cv2.minEnclosingCircle(np.array(self.contour))[1]
